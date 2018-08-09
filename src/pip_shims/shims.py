@@ -23,6 +23,23 @@ path_info = namedtuple("PathInfo", "path start_version end_version")
 parsed_pip_version = _parse(pip_version)
 
 
+class ShimImpl(object):
+    def __init__(self):
+        self._orig_module = sys.modules[__name__]
+        self._cache = {}
+        self._modules = {}
+        self.__spec__ = self._orig_module.__spec__
+
+    def __getattribute__(self, name):
+        modules = object.__getattribute__(self, "_modules")
+        if name in modules:
+            return do_import(modules[name])
+        return object.__getattribute__(self, name)
+
+    def __setitem__(self, name, module_paths):
+        self._modules[name] = module_paths
+
+
 def is_valid(path_info_tuple):
     if (
         path_info_tuple.start_version >= parsed_pip_version
@@ -78,41 +95,26 @@ def do_import(module_paths, base_path=BASE_IMPORT_PATH):
     return imported
 
 
-parse_version = do_import(
-    [path_info("index.parse_version", _parse("7.0.0"), _parse("9999"))]
-)
-_strip_extras = do_import(
-    [path_info("req.req_install._strip_extras", _parse("7.0.0"), _parse("9999"))]
-)
-cmdoptions = do_import(
-    [
+shimmed_imports = ShimImpl()
+
+
+shimmed_imports["_strip_extras"] = [path_info("req.req_install._strip_extras", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["cmdoptions"] = [
         path_info("cli.cmdoptions", _parse("18.1"), _parse("9999")),
         path_info("cmdoptions", _parse("7.0.0"), _parse("18.0")),
     ]
-)
-Command = do_import(
-    [
+shimmed_imports["Command"] = [
         path_info("cli.base_command.Command", _parse("18.1"), _parse("9999")),
         path_info("basecommand.Command", _parse("7.0.0"), _parse("18.0")),
     ]
-)
-ConfigOptionParser = do_import(
-    [
+shimmed_imports["ConfigOptionParser"] = [
         path_info("cli.parser.ConfigOptionParser", _parse("18.1"), _parse("9999")),
         path_info("baseparser.ConfigOptionParser", _parse("7.0.0"), _parse("18.0")),
     ]
-)
-DistributionNotFound = do_import(
-    [path_info("exceptions.DistributionNotFound", _parse("7.0.0"), _parse("9999"))]
-)
-FAVORITE_HASH = do_import(
-    [path_info("utils.hashes.FAVORITE_HASH", _parse("7.0.0"), _parse("9999"))]
-)
-FormatControl = do_import(
-    [path_info("index.FormatControl", _parse("7.0.0"), _parse("9999"))]
-)
-get_installed_distributions = do_import(
-    [
+shimmed_imports["DistributionNotFound"] = [path_info("exceptions.DistributionNotFound", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["FAVORITE_HASH"] = [path_info("utils.hashes.FAVORITE_HASH", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["FormatControl"] = [path_info("index.FormatControl", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["get_installed_distributions"] = [
         path_info(
             "utils.misc.get_installed_distributions", _parse("10.0.0"), _parse("9999")
         ),
@@ -120,88 +122,54 @@ get_installed_distributions = do_import(
             "utils.get_installed_distributions", _parse("7.0.0"), _parse("9.0.3")
         ),
     ]
-)
-index_group = do_import(
-    [
+shimmed_imports["index_group"] = [
         path_info("cli.cmdoptions.index_group", _parse("18.1"), _parse("9999")),
         path_info("cmdoptions.index_group", _parse("7.0.0"), _parse("18.0")),
     ]
-)
-InstallRequirement = do_import(
-    [path_info("req.req_install.InstallRequirement", _parse("7.0.0"), _parse("9999"))]
-)
-is_archive_file = do_import(
-    [path_info("download.is_archive_file", _parse("7.0.0"), _parse("9999"))]
-)
-is_file_url = do_import(
-    [path_info("download.is_file_url", _parse("7.0.0"), _parse("9999"))]
-)
-is_installable_dir = do_import(
-    [
+shimmed_imports["InstallRequirement"] = [path_info("req.req_install.InstallRequirement", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["is_archive_file"] = [path_info("download.is_archive_file", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["is_file_url"] = [path_info("download.is_file_url", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["is_installable_dir"] = [
         path_info("utils.misc.is_installable_dir", _parse("10.0.0"), _parse("9999")),
         path_info("utils.is_installable_dir", _parse("7.0.0"), _parse("9.0.3")),
     ]
-)
-Link = do_import([path_info("index.Link", _parse("7.0.0"), _parse("9999"))])
-make_abstract_dist = do_import(
-    [
+shimmed_imports["Link"] = [path_info("index.Link", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["make_abstract_dist"] = [
         path_info(
             "operations.prepare.make_abstract_dist", _parse("10.0.0"), _parse("9999")
         ),
         path_info("req.req_set.make_abstract_dist", _parse("7.0.0"), _parse("9.0.3")),
     ]
-)
-make_option_group = do_import(
-    [
+shimmed_imports["make_option_group"] = [
         path_info("cli.cmdoptions.make_option_group", _parse("18.1"), _parse("9999")),
         path_info("cmdoptions.make_option_group", _parse("7.0.0"), _parse("18.0")),
     ]
-)
-PackageFinder = do_import(
-    [path_info("index.PackageFinder", _parse("7.0.0"), _parse("9999"))]
-)
-parse_requirements = do_import(
-    [path_info("req.req_file.parse_requirements", _parse("7.0.0"), _parse("9999"))]
-)
-parse_version = do_import(
-    [path_info("index.parse_version", _parse("7.0.0"), _parse("9999"))]
-)
-path_to_url = do_import(
-    [path_info("download.path_to_url", _parse("7.0.0"), _parse("9999"))]
-)
-PipError = do_import(
-    [path_info("exceptions.PipError", _parse("7.0.0"), _parse("9999"))]
-)
-RequirementPreparer = do_import(
-    [
+shimmed_imports["PackageFinder"] = [path_info("index.PackageFinder", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["parse_requirements"] = [path_info("req.req_file.parse_requirements", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["parse_version"] = [path_info("index.parse_version", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["path_to_url"] = [path_info("download.path_to_url", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["PipError"] = [path_info("exceptions.PipError", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["RequirementPreparer"] = [
         path_info(
             "operations.prepare.RequirementPreparer", _parse("7.0.0"), _parse("9999")
         )
     ]
-)
-RequirementSet = do_import(
-    [path_info("req.req_set.RequirementSet", _parse("7.0.0"), _parse("9999"))]
-)
-RequirementTracker = do_import(
-    [path_info("req.req_tracker.RequirementTracker", _parse("7.0.0"), _parse("9999"))]
-)
-Resolver = do_import([path_info("resolve.Resolver", _parse("7.0.0"), _parse("9999"))])
-SafeFileCache = do_import(
-    [path_info("download.SafeFileCache", _parse("7.0.0"), _parse("9999"))]
-)
-url_to_path = do_import(
-    [path_info("download.url_to_path", _parse("7.0.0"), _parse("9999"))]
-)
-USER_CACHE_DIR = do_import(
-    [path_info("locations.USER_CACHE_DIR", _parse("7.0.0"), _parse("9999"))]
-)
-VcsSupport = do_import([path_info("vcs.VcsSupport", _parse("7.0.0"), _parse("9999"))])
-Wheel = do_import([path_info("wheel.Wheel", _parse("7.0.0"), _parse("9999"))])
-WheelCache = do_import([path_info("cache.WheelCache", _parse("7.0.0"), _parse("9999"))])
+shimmed_imports["RequirementSet"] = [path_info("req.req_set.RequirementSet", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["RequirementTracker"] = [path_info("req.req_tracker.RequirementTracker", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["Resolver"] = [path_info("resolve.Resolver", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["SafeFileCache"] = [path_info("download.SafeFileCache", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["url_to_path"] = [path_info("download.url_to_path", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["USER_CACHE_DIR"] = [path_info("locations.USER_CACHE_DIR", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["VcsSupport"] = [path_info("vcs.VcsSupport", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["Wheel"] = [path_info("wheel.Wheel", _parse("7.0.0"), _parse("9999"))]
+shimmed_imports["WheelCache"] = [path_info("cache.WheelCache", _parse("7.0.0"), _parse("9999"))]
 
 
-if not RequirementTracker:
+if not shimmed_imports.RequirementTracker:
 
     @contextmanager
     def RequirementTracker():
         yield
+    shimmed_imports["RequirementTracker"] = RequirementTracker
+
+# sys.modules[__name__] = shimmed_imports

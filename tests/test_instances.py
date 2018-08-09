@@ -272,4 +272,3 @@ def test_vcs_support():
 def test_wheel():
     w = Wheel("pytoml-0.1.18-cp36-none-any.whl")
     assert w.pyversions == ["cp36"]
-
